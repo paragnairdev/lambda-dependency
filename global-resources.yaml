@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Global resources
+
+Parameters:
+  ApprovalEmail:
+    Type: String
+    Description: Approval Email
+
+Resources:
+  ArtifactStoreLocation:
+    Type: AWS::S3::Bucket
+    Properties: 
+      VersioningConfiguration: 
+        Status: Enabled
+      Tags:
+        - Key: billing-system
+          Value: global
+        - Key: billing-infrastructure
+          Value: deployment
+        - Key: billing-environment
+          Value: development
+  ApprovalNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: pipeline-notificaion
+      Subscription: 
+        - Protocol: email
+          Endpoint: !Ref ApprovalEmail
+      TopicName: pipeline-notification
+  PipelineNotificationRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: CI/CD pipeline failure notification
+      EventPattern:
+        source: 
+          - aws.codepipeline
+        detail-type:
+          - "Codepipeline Pipeline Execution State Change"
+        detail:
+          state:
+            - FAILED
+      State: ENABLED
+      Targets:
+        - Arn: !Ref ApprovalNotificationTopic
+          Id: OpsTopic
+          InputTransformer:
+            InputPathsMap:
+              pipeline: "$.detail.pipeline"
+              region: "$.region"
+            InputTemplate: "\"The pipeline <pipeline> has failed. https://<region>.console.aws.amazon.com/codesuite/codepipeline/pipelines/<pipeline>/view?region=<region>\""
+  
+Outputs:
+  ArtifactBucket:
+    Description: Name of the S3 bucket where artifacts are stored
+    Value: !Ref ArtifactStoreLocation
+    Export:
+      Name: !Sub '${AWS::StackName}-CodeArtifactStore'
+  GlobalNotificationTopic:
+    Description: Notification topic
+    Value: !Ref ApprovalNotificationTopic
+    Export: 
+      Name: !Sub '${AWS::StackName}-GlobalNotificationTopic'
