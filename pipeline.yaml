@@ -72,6 +72,7 @@ Resources:
               - Effect: "Allow"
                 Action:
                   - s3:*
+                  - sns:Publish
                 Resource: "*"
   
   CodeBuildServiceRole:
@@ -152,6 +153,18 @@ Resources:
                 Branch: !Ref Branch
                 OAuthToken: !Ref GithubToken
               RunOrder: 1
+        - Name: ApproveProceed
+          Actions:
+            - Name: ConfirmProceed
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              Configuration:
+                NotificationArn: 
+                  Fn::ImportValue: !Sub "${GlobalStackName}-GlobalNotificationTopic"
+              RunOrder: 1
         - Name: Build
           Actions:
             - Name: BuildLambda
@@ -167,3 +180,13 @@ Resources:
               Configuration:
                 ProjectName: !Ref LambdaCodeBuildProject
               RunOrder: 1
+            - Name: ApproveBuild
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              Configuration:
+                NotificationArn: 
+                  Fn::ImportValue: !Sub "${GlobalStackName}-GlobalNotificationTopic"
+              RunOrder: 2
