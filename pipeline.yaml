@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: "CI/CD Pipeline"
+
+Parameters:
+  Branch:
+    Type: String
+    Default: master
+    Description: Branch to trigger build on
+  GlobalStackName:
+    Type: String
+    Default: global-resources
+    Description: Name of stack which has the artifact s3 bucket and approval notification topic
+  GithubRepo:
+    Type: String
+    Default: "lambda-dependency"
+    Description: Github repository
+  GithubUser:
+    Type: String
+    Description: Github username
+  GithubToken:
+    Type: String
+    Description: OAuth Token from Github
+
+Resources:
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: "root"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - s3:PutObject
+                Resource: 
+                  - arn:aws:s3:::codepipeline*
+              - Effect: "Allow"
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:UpdateStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:SetStackPolicy
+                  - cloudformation:ValidateTemplate
+                  - iam:PassRole
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: "*"
+  
+  AppPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: 
+          Fn::ImportValue:
+            !Sub "${GlobalStackName}-CodeArtifactStore"
+      Stages: 
+        - 
+          Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: Source
+              Configuration:
+                Owner: !Ref GithubUser
+                Repo: !Ref GithubRepo
+                Branch: !Ref Branch
+                OAuthToken: !Ref GithubToken
+              RunOrder: 1
+    

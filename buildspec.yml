@@ -1,0 +1,14 @@
+version: 0.1
+
+phases:
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...          
+      - docker build -t lambda-build .
+      - docker create --name lambda-build-cont lambda-build
+      - docker cp lambda-build-cont:/lambda/bin/Release/netcoreapp2.1/publish ./
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'publish'
