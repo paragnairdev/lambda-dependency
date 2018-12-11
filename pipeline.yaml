@@ -49,6 +49,7 @@ Resources:
                   - s3:PutObject
                 Resource: 
                   - arn:aws:s3:::codepipeline*
+                  - arn:aws:s3:::elasticbeanstalk*
               - Effect: "Allow"
                 Action:
                   - cloudformation:CreateStack
@@ -68,6 +69,62 @@ Resources:
                   - codebuild:BatchGetBuilds
                   - codebuild:StartBuild
                 Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - s3:*
+                Resource: "*"
+  
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Resource:
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Effect: "Allow"
+                Resource:
+                  - !Join
+                    - ''
+                    - -  "arn:aws:s3:::"
+                      -  Fn::ImportValue: 
+                            !Sub "${GlobalStackName}-CodeArtifactStore"
+                      - "/*"
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+  
+  LambdaCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Packaging: NONE
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:1.12.1
+        Type: LINUX_CONTAINER
+      Name: !Sub "${AWS::StackName}-Lambda-Build"
+      ServiceRole: !Ref CodeBuildServiceRole
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
   
   AppPipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -79,8 +136,7 @@ Resources:
           Fn::ImportValue:
             !Sub "${GlobalStackName}-CodeArtifactStore"
       Stages: 
-        - 
-          Name: Source
+        - Name: Source
           Actions:
             - Name: SourceAction
               ActionTypeId:
@@ -96,4 +152,18 @@ Resources:
                 Branch: !Ref Branch
                 OAuthToken: !Ref GithubToken
               RunOrder: 1
-    
+        - Name: Build
+          Actions:
+            - Name: BuildLambda
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              InputArtifacts:
+                - Name: Source
+              OutputArtifacts:
+                - Name: MyLambda
+              Configuration:
+                ProjectName: !Ref LambdaCodeBuildProject
+              RunOrder: 1
