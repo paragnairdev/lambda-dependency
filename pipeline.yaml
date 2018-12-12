@@ -111,6 +111,36 @@ Resources:
                   - s3:GetObjectVersion
                   - s3:PutObject
   
+  CloudFormationServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/"
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - 
+         PolicyName: "root"
+         PolicyDocument:
+           Version: "2012-10-17"
+           Statement:
+              - 
+                Effect: "Allow"
+                Action:
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DeleteAlarm
+                  - cloudwatch:DeleteAlarms
+                  - logs:*
+                  - iam:*
+                  - lambda:*
+                  - s3:*
+                  - 
+                Resource: "*" 
+  
   LambdaCodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -190,3 +220,47 @@ Resources:
                 NotificationArn: 
                   Fn::ImportValue: !Sub "${GlobalStackName}-GlobalNotificationTopic"
               RunOrder: 2
+        - Name: Staging
+          Actions:
+            - Name: DeployStaging
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              InputArtifacts:
+                - Name: Source
+                - Name: MyLambda
+              OutputArtifacts:
+                - Name: StackOut
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: sample-lambda-staging
+                TemplatePath: Source::app.yaml
+                Capabilities: CAPABILITY_IAM
+                RoleArn: !GetAtt CloudFormationServiceRole.Arn
+                OutputFileName: staging-output.json
+                ParameterOverrides: >-
+                  {"Environment":"staging", "ArtifactsBucket":{"FN::GetArtifactAtt":["MyLambda", "BucketName"]}, "LambdaPackageObjectKey": {"FN::GetArtifactAtt":["MyLambda", "ObjectKey"]}}
+              RunOrder: 1
+            - Name: ApproveStaging
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              Configuration:
+                NotificationArn: 
+                  Fn::ImportValue: !Sub "${GlobalStackName}-GlobalNotificationTopic"
+              RunOrder: 2
+            - Name: DeleteStaging
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: DELETE_ONLY
+                StackName: sample-lambda-staging
+                RoleArn: !GetAtt CloudFormationServiceRole.Arn
+              RunOrder: 3
