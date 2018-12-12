@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: A sample API Gateway backed by a Lambda
+
+Parameters:
+  Environment:
+    Description: The environment for the deployment
+    Type: String
+    Default: development
+  ArtifactsBucket:
+    Description: The name of the bucket where artifacts are stored
+    Type: String
+    Default: ""
+  LambdaPackageObjectKey:
+    Description: The s3 object key of the artifacts for the lambda
+    Type: String
+    Default: ""
+
+Resources:
+  GeneralLambdaRolePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: General Lambda role policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Resource: "*"
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+  SampleLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Converts the provided string to Uppercase
+      Handler: lambda_dependency::lambda_dependency.Function::FunctionHandler
+      Role: !GetAtt SampleLambdaRole.Arn
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackageObjectKey
+      Runtime: dotnetcore2.1
+      Timeout: 5
+      MemorySize: 128
+      Environment:
+        Variables:
+          AWSRegion: !Ref AWS::Region
+          Environment: !Ref Environment
+  SampleLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: lambda.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - !Ref GeneralLambdaRolePolicy
