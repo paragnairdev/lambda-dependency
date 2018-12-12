@@ -128,8 +128,7 @@ Resources:
          PolicyDocument:
            Version: "2012-10-17"
            Statement:
-              - 
-                Effect: "Allow"
+              - Effect: "Allow"
                 Action:
                   - cloudwatch:PutMetricAlarm
                   - cloudwatch:DeleteAlarm
@@ -138,7 +137,6 @@ Resources:
                   - iam:*
                   - lambda:*
                   - s3:*
-                  - 
                 Resource: "*" 
   
   LambdaCodeBuildProject:
