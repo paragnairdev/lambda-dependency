@@ -208,16 +208,6 @@ Resources:
               Configuration:
                 ProjectName: !Ref LambdaCodeBuildProject
               RunOrder: 1
-            - Name: ApproveBuild
-              ActionTypeId:
-                Category: Approval
-                Owner: AWS
-                Version: 1
-                Provider: Manual
-              Configuration:
-                NotificationArn: 
-                  Fn::ImportValue: !Sub "${GlobalStackName}-GlobalNotificationTopic"
-              RunOrder: 2
         - Name: Staging
           Actions:
             - Name: DeployStaging
@@ -239,7 +229,7 @@ Resources:
                 RoleArn: !GetAtt CloudFormationServiceRole.Arn
                 OutputFileName: staging-output.json
                 ParameterOverrides: >-
-                  {"Environment":"staging", "ArtifactsBucket":{"FN::GetArtifactAtt":["MyLambda", "BucketName"]}, "LambdaPackageObjectKey": {"FN::GetArtifactAtt":["MyLambda", "ObjectKey"]}}
+                  {"Environment":"staging", "ArtifactsBucket":{"Fn::GetArtifactAtt":["MyLambda", "BucketName"]}, "LambdaPackageObjectKey": {"Fn::GetArtifactAtt":["MyLambda", "ObjectKey"]}}
               RunOrder: 1
             - Name: ApproveStaging
               ActionTypeId:

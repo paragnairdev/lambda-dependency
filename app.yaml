@@ -34,7 +34,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Description: Converts the provided string to Uppercase
-      Handler: lambda_dependency::lambda_dependency.Function::FunctionHandler
+      Handler: lambda-dependency::lambda_dependency.Function::FunctionHandler
       Role: !GetAtt SampleLambdaRole.Arn
       Code:
         S3Bucket: !Ref ArtifactsBucket
