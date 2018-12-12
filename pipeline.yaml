@@ -133,11 +133,47 @@ Resources:
                   - cloudwatch:PutMetricAlarm
                   - cloudwatch:DeleteAlarm
                   - cloudwatch:DeleteAlarms
-                  - logs:*
-                  - iam:*
-                  - lambda:*
-                  - s3:*
-                Resource: "*" 
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:DescribeLogGroups
+                  - logs:PutRetentionPolicy
+                  - logs:CreateLogStream
+                  - logs:DeleteLogStream
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:CreatePolicy
+                  - iam:DeletePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:GetPolicy
+                  - iam:ListPolicyVersions
+                  - iam:CreatePolicyVersion
+                  - iam:DeletePolicyVersion
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:AddPermission
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:RemovePermission
+                  - lambda:UpdateFunctionCode
+                  - lambda:GetFunctionConfiguration
+                  - lambda:CreateEventSourceMapping
+                  - lambda:DeleteEventSourceMapping
+                  - lambda:GetEventSourceMapping
+                  - lambda:UpdateEventSourceMapping
+                Resource: "*"
   
   LambdaCodeBuildProject:
     Type: AWS::CodeBuild::Project

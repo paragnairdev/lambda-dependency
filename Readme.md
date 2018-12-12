@@ -24,4 +24,4 @@ There are 2 cloudformation templates:
 
 ## NOTE
 
-Please be aware of resources this creates on your AWS account so you can check what it costs you. At the time of writing this, a `Codepipeline` is charged at $1 a month (after the first 30 days). The costliest part in this might probably be `CodeBuild` which gives you 100 minutes on the smallest instance. This is one of the reasons I have added a Approval step before the build to make sure the code is only build when you want it to.
+Please be aware of resources this creates on your AWS account so you can check what it costs you. At the time of writing this, a `Codepipeline` is charged at $1 a month (after the first 30 days). The costliest part in this might probably be `CodeBuild` which gives you 100 free minutes of build on the smallest instance. This is one of the reasons I have added a Approval step before the build to make sure the code is only build when you want it to.
